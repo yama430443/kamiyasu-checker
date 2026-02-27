@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>神谷浩史数チェッカー</title>
+    
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>神谷浩史数チェッカー</h1>
+        <div class="subtitle">声優界の中心まで何人で繋がる？</div>
+
+        <div class="search-area">
+            <form method="POST">
+                <div class="search-box">
+                    <input type="text" id="seiyuu_input" name="seiyuu_name" placeholder="声優名 (例: 花江夏樹)" value="{{ target_name }}" required>
+                    <button type="submit">検索</button>
+                </div>
+            </form>
+        </div>
+
+        {% if error %}
+            <div class="error-msg">{{ error }}</div>
+        {% endif %}
+
+        {% if result %}
+            <div class="result-area">
+                <div class="result-header">
+                    結果: <span style="color:var(--primary-color);">{{ result|length }}</span> ステップ
+                </div>
+                
+                <div class="path-container">
+                    <div class="actor-card">{{ target_name }}</div>
+
+                    {% for step in result %}
+                        <div class="arrow-down">↓</div>
+                        <div class="works-box">
+                            <div class="work-item">
+                                <span class="work-title">{{ step.works[0].title }}</span>
+                                <div class="work-roles">{{ step.works[0].role_u }} / {{ step.works[0].role_v }}</div>
+                            </div>
+                            {% if step.works|length > 1 %}
+                                <div class="hidden-works" id="works-{{ loop.index }}">
+                                    {% for work in step.works[1:] %}
+                                        <div style="margin-bottom:5px; border-bottom:1px solid #f9f9f9;">
+                                            <span class="work-title" style="font-size:0.9em;">{{ work.title }}</span>
+                                            <div class="work-roles">{{ work.role_u }} / {{ work.role_v }}</div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                <a class="more-works-toggle" onclick="toggleWorks({{ loop.index }})">他 {{ step.works|length - 1 }} 作品を見る</a>
+                            {% endif %}
+                        </div>
+                        <div class="arrow-down">↓</div>
+                        <div class="actor-card {% if loop.last %}actor-goal{% endif %}">{{ step.actor2 }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="examples-section">
+            {% for category, actors in example_groups.items() %}
+                <div class="example-group">
+                    <span class="example-title">神谷浩史数 {{ category }} の声優（例）</span>
+                    <div class="example-tags">
+                        {% for actor in actors %}
+                            <a href="/?seiyuu_name={{ actor }}" class="example-tag">{{ actor }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        const allActors = {{ all_actors_json|safe }};
+    </script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
