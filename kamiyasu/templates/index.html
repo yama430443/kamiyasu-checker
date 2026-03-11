@@ -16,11 +16,16 @@
         <h1>神谷浩史数チェッカー</h1>
         <div class="subtitle">声優界の中心まで何人で繋がる？</div>
 
+        <div class="nav-links">
+            <a href="/search" class="nav-button">任意の声優同士で検索する</a>
+        </div>
+
         <div class="search-area">
             <form method="POST">
                 <div class="search-box">
-                    <input type="text" id="seiyuu_input" name="seiyuu_name" placeholder="声優名 (例: 花江夏樹)" value="{{ target_name }}" required>
+                    <input type="text" id="seiyuu_input" name="seiyuu_name" placeholder="声優名 (名前は完全一致となるように入力してください)" value="{{ target_name }}" required>
                     <button type="submit">検索</button>
+                    <a href="/" class="reset-button">クリア</a>
                 </div>
             </form>
         </div>
