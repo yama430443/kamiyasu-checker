@@ -3,29 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>神谷浩史数チェッカー</title>
-    
+    <title>声優繋がり検索</title>
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>神谷浩史数チェッカー</h1>
-        <div class="subtitle">声優界の中心まで何人で繋がる？</div>
-
+        <h1>声優繋がり検索</h1>
+        <div class="subtitle">任意の声優同士が共演でどう繋がるか調べます</div>
+        
         <div class="nav-links">
-            <a href="/search" class="nav-button">任意の声優同士で検索する</a>
+            <a href="/" class="nav-button">神谷浩史数チェッカーに戻る</a>
         </div>
 
         <div class="search-area">
             <form method="POST">
-                <div class="search-box">
-                    <input type="text" id="seiyuu_input" name="seiyuu_name" placeholder="声優名 (名前は完全一致で入力してください)" value="{{ target_name }}" required>
-                    <button type="submit">検索</button>
-                    <a href="/" class="reset-button">クリア</a>
+                <div class="search-box search-box-double">
+                    <input type="text" id="start_input" class="autocomplete-input" name="start_name" placeholder="出発点 (例: 花江夏樹)" value="{{ start_name }}" required>
+                    <span style="font-size: 1.5em; color: #bdc3c7;">→</span>
+                    <input type="text" id="end_input" class="autocomplete-input" name="end_name" placeholder="目的地 (例: 中村悠一)" value="{{ end_name }}" required>
+                </div>
+                <div class="button-group" style="margin-top: 15px;">
+                     <button type="submit">検索</button>
+                     <a href="/search" class="reset-button">クリア</a>
                 </div>
             </form>
         </div>
@@ -41,7 +43,7 @@
                 </div>
                 
                 <div class="path-container">
-                    <div class="actor-card">{{ target_name }}</div>
+                    <div class="actor-card">{{ start_name }}</div>
 
                     {% for step in result %}
                         <div class="arrow-down">↓</div>
@@ -68,23 +70,10 @@
                 </div>
             </div>
         {% endif %}
-
-        <div class="examples-section">
-            {% for category, actors in example_groups.items() %}
-                <div class="example-group">
-                    <span class="example-title">神谷浩史数 {{ category }} の声優（例）</span>
-                    <div class="example-tags">
-                        {% for actor in actors %}
-                            <a href="/?seiyuu_name={{ actor }}" class="example-tag">{{ actor }}</a>
-                        {% endfor %}
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
     </div>
 
-    <script>
-        const allActors = {{ all_actors_json|safe }};
+    <script id="actors-data" type="application/json">
+        {{ all_actors_json|safe }}
     </script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
