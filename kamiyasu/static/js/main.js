@@ -1,21 +1,23 @@
 $(function() {
-    // allActors は index.html 内で定義されている純粋な文字列配列を利用
-    $("#seiyuu_input").autocomplete({
+    const actorsDataText = document.getElementById('actors-data').textContent;
+    const allActors = JSON.parse(actorsDataText);
+
+    // クラス名で複数の入力欄にオートコンプリートを適用
+    $("#seiyuu_input, .autocomplete-input").autocomplete({
         source: function(request, response) {
             var term = request.term;
             var matcher = new RegExp($.ui.autocomplete.escapeRegex(term), "i");
             
-            // 無駄の排除: kana判定を削除し、単純な文字列マッチに変更
             var results = $.grep(allActors, function(item) {
                 return matcher.test(item);
             });
-            response(results.slice(0, 20));
+            response(results.slice(0, 30));
         },
         minLength: 1,
         delay: 200
-        // 不要になったハック（closeイベントの制御等）は全削除
     });
 });
+
 
 function toggleWorks(index) {
     var el = document.getElementById('works-' + index);
