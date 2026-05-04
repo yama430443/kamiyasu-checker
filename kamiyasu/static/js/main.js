@@ -2,6 +2,8 @@ $(function() {
     const actorsDataText = document.getElementById('actors-data').textContent;
     const allActors = JSON.parse(actorsDataText);
 
+    console.log(allActors);
+
     // クラス名で複数の入力欄にオートコンプリートを適用
     $("#seiyuu_input, .autocomplete-input").autocomplete({
         source: function(request, response) {
