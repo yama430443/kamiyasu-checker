@@ -13,7 +13,7 @@ $(function() {
             var results = $.grep(allActors, function(item) {
                 return matcher.test(item);
             });
-            response(results.slice(0, 30));
+            response(results.slice(0, 50));
         },
         minLength: 1,
         delay: 200
