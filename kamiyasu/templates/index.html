@@ -15,15 +15,14 @@
     <div class="container">
         <h1>神谷浩史数チェッカー</h1>
         <div class="subtitle">声優界の中心まで何人で繋がる？</div>
+        <p>※名前は正式名称・フルネーム（スペースなし）で入力してください</p>
 
-        <div class="nav-links">
-            <a href="/search" class="nav-button">任意の声優同士で検索する</a>
-        </div>
+        <!-- ※A/Bテストのため、自由検索へのナビゲーションリンクを削除 -->
 
         <div class="search-area">
             <form method="POST">
                 <div class="search-box">
-                    <input type="text" id="seiyuu_input" name="seiyuu_name" placeholder="声優名 (名前は完全一致で入力してください)" value="{{ target_name }}" required>
+                    <input type="text" id="seiyuu_input" name="seiyuu_name" placeholder="声優名 (例: 中村悠一)" value="{{ target_name }}" required>
                     <button type="submit">検索</button>
                     <a href="/" class="reset-button">クリア</a>
                 </div>
@@ -69,22 +68,11 @@
             </div>
         {% endif %}
 
-        <div class="examples-section">
-            {% for category, actors in example_groups.items() %}
-                <div class="example-group">
-                    <span class="example-title">神谷浩史数 {{ category }} の声優（例）</span>
-                    <div class="example-tags">
-                        {% for actor in actors %}
-                            <a href="/?seiyuu_name={{ actor }}" class="example-tag">{{ actor }}</a>
-                        {% endfor %}
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
     </div>
 
-    <script>
-        const allActors = {{ all_actors_json|safe }};
+    <!-- main.jsで読み込めるようにIDを付与したscriptタグに変更 -->
+    <script id="actors-data" type="application/json">
+        {{ all_actors_json|safe }}
     </script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>

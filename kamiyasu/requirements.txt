@@ -1,0 +1,5 @@
+flask
+networkx
+pandas
+gunicorn
+supabase

@@ -27,9 +27,18 @@ input[type="text"] {
     transition: border-color 0.3s;
 }
 input[type="text"]:focus { border-color: var(--primary-color); }
+
 button {
-    padding: 14px 24px; font-size: 16px; background-color: var(--primary-color);
-    color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;
+    padding: 14px 24px; 
+    font-size: 16px; 
+    background-color: var(--primary-color);
+    color: white; 
+    border: none; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    font-weight: bold;
+    transition: background-color 0.3s; /* 追加: ホバーアニメーションの統一 */
+    box-sizing: border-box;            /* 追加: 高さ計算の厳密化 */
 }
 button:hover { background-color: #2980b9; }
 
@@ -82,3 +91,35 @@ button:hover { background-color: #2980b9; }
     box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #ddd;
 }
 .ui-menu-item .ui-menu-item-wrapper { padding: 8px 10px; }
+
+/* 追加: ナビゲーションとリセットボタン */
+.nav-links { margin-bottom: 20px; }
+.nav-button {
+    display: inline-block; padding: 8px 16px; background-color: #ecf0f1;
+    color: var(--text-color); text-decoration: none; border-radius: 20px;
+    font-size: 0.9em; transition: background 0.3s;
+}
+.nav-button:hover { background-color: #bdc3c7; }
+
+.reset-button {
+    display: inline-flex;              /* 変更: 縦ズレを防ぐためflex化 */
+    align-items: center;               /* 追加: テキストを縦中央に強制 */
+    justify-content: center;
+    padding: 14px 24px;                /* 変更: 検索ボタンと統一 */
+    font-size: 16px;                   /* 追加: 検索ボタンと統一 */
+    background-color: #e74c3c;
+    color: white; 
+    text-decoration: none; 
+    border-radius: 8px; 
+    font-weight: bold;
+    /* margin-left: 10px; は削除 (親の gap:10px に任せる) */
+    transition: background-color 0.3s;
+    box-sizing: border-box;            /* 追加: 高さ計算の厳密化 */
+}
+.reset-button:hover { background-color: #c0392b; }
+
+.search-box-double { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.search-box-double input { width: 40%; }
+@media (max-width: 500px) {
+    .search-box-double input { width: 100%; }
+}
