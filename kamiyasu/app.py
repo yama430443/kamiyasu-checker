@@ -78,16 +78,25 @@ def log_to_supabase(table_name, data):
 # --- 全リクエスト共通：セッション管理とA/Bグループ割り当て ---
 @app.before_request
 def manage_session():
-    # 静的ファイルはセッション処理をスキップ
-    if request.path.startswith('/static'):
+    # 1. 静的ファイルやアイコン探しの通信は無視する
+    if request.path.startswith('/static') or request.path == '/favicon.ico':
         return
 
+    # 2. 【追加】アクセス元の正体（User-Agent）を確認し、Botなら無視する
+    user_agent = request.headers.get('User-Agent', '').lower()
+    bot_keywords = ['bot', 'crawler', 'spider', 'preview', 'line', 'facebook', 'twitter', 'discord']
+    if any(keyword in user_agent for keyword in bot_keywords):
+        return # Botのアクセスはログに残さず、セッションも作らない
+
+    # 3. 本物の人間のアクセスのみ、セッション発行とログ記録を行う
     session.permanent = True
     if 'session_id' not in session:
         session['session_id'] = str(uuid.uuid4())
         session['start_time'] = datetime.now().isoformat()
         # 50%の確率で「fixed(固定)」か「free(自由)」を割り当て
         session['assigned_mode'] = 'fixed' if random.random() < 0.5 else 'free'
+        
+        # アクセスログを記録
         log_to_supabase("access_logs", {
             "session_id": session['session_id'],
             "assigned_mode": session['assigned_mode']
