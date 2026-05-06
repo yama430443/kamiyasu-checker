@@ -68,6 +68,13 @@ def insert_log_to_supabase(log_data):
     except Exception as e:
         print(f"Supabase insert error: {e}")
 
+# --- ログ記録用の共通関数（ここを新しく追加） ---
+def log_to_supabase(table_name, data):
+    try:
+        supabase.table(table_name).insert(data).execute()
+    except Exception as e:
+        print(f"Supabase Log Error: {e}")
+
 # --- 全リクエスト共通：セッション管理とA/Bグループ割り当て ---
 @app.before_request
 def manage_session():
@@ -81,6 +88,10 @@ def manage_session():
         session['start_time'] = datetime.now().isoformat()
         # 50%の確率で「fixed(固定)」か「free(自由)」を割り当て
         session['assigned_mode'] = 'fixed' if random.random() < 0.5 else 'free'
+        log_to_supabase("access_logs", {
+            "session_id": session['session_id'],
+            "assigned_mode": session['assigned_mode']
+        })
 
 # --- Aグループ：制約ありモード（神谷浩史数チェッカー） ---
 @app.route("/", methods=["GET", "POST"])
@@ -96,13 +107,21 @@ def index():
 
     # 検索が実行されたらログを送信
     if target_name:
+        error_category = None
+        if error:
+            if "見つかりませんでした" in error:
+                error_category = "存在しない声優名" # 名前自体がDBにない（タイポなど）
+            elif "繋がりは見つかりませんでした" in error:
+                error_category = "経路なし" # 名前は正しいが、共演歴がない
+            else:
+                error_category = "その他エラー"
         log_data = {
             "session_id": session['session_id'],
             "assigned_mode": session['assigned_mode'],
             "start_node": target_name,
             "end_node": TARGET_CENTER_NODE,
             "is_error": bool(error),
-            "error_detail": error if error else None,
+            "error_detail": error_category,
             "path_length": len(result) if result else 0
         }
         threading.Thread(target=insert_log_to_supabase, args=(log_data,)).start()
@@ -133,13 +152,21 @@ def search():
 
     # 検索が実行されたらログを送信
     if start_name or end_name:
+        error_category = None
+        if error:
+            if "見つかりませんでした" in error:
+                error_category = "存在しない声優名" # 名前自体がDBにない（タイポなど）
+            elif "繋がりは見つかりませんでした" in error:
+                error_category = "経路なし" # 名前は正しいが、共演歴がない
+            else:
+                error_category = "その他エラー"
         log_data = {
             "session_id": session['session_id'],
             "assigned_mode": session['assigned_mode'],
             "start_node": start_name,
             "end_node": end_name,
             "is_error": bool(error),
-            "error_detail": error if error else None,
+            "error_detail": error_category,
             "path_length": len(result) if result else 0
         }
         threading.Thread(target=insert_log_to_supabase, args=(log_data,)).start()
