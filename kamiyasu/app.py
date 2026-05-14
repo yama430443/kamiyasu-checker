@@ -50,7 +50,7 @@ def find_path(source_node, target_node):
     if source_node == target_node: return [], "出発点と目的地が同じです。別の声優を入力してください。"
 
     try:
-        all_paths = list(nx.all_shortest_path(G, source=source_node, target=target_node))
+        all_paths = list(nx.all_shortest_paths(G, source=source_node, target=target_node))
         path = random.choice(all_paths)
         return [{
             "actor1": path[i], "actor2": path[i+1],
@@ -111,7 +111,7 @@ def index():
         return redirect(url_for('search'))
 
     target_name = request.form.get("seiyuu_name", "") if request.method == "POST" else request.args.get("seiyuu_name", "")
-    target_name = target_name.strip().replace("　", " ")
+    target_name = target_name.strip().replace("　", "").replace(" ", "")
     
     result, error = (find_path(target_name, TARGET_CENTER_NODE) if target_name else (None, None))
 
