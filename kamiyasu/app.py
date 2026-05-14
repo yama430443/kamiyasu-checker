@@ -50,7 +50,8 @@ def find_path(source_node, target_node):
     if source_node == target_node: return [], "出発点と目的地が同じです。別の声優を入力してください。"
 
     try:
-        path = nx.shortest_path(G, source=source_node, target=target_node)
+        all_paths = list(nx.all_shortest_path(G, source=source_node, target=target_node))
+        path = random.choice(all_paths)
         return [{
             "actor1": path[i], "actor2": path[i+1],
             "works": get_shared_works(path[i], path[i+1]) or [{'title':'不明','role_u':'?','role_v':'?'}]
@@ -84,7 +85,7 @@ def manage_session():
 
     # 2. 【追加】アクセス元の正体（User-Agent）を確認し、Botなら無視する
     user_agent = request.headers.get('User-Agent', '').lower()
-    bot_keywords = ['bot', 'crawler', 'spider', 'preview', 'line', 'facebook', 'twitter', 'discord']
+    bot_keywords = ['bot', 'crawler', 'spider', 'preview', 'line', 'facebook', 'twitter', 'discord', 'instagram', 'X']
     if any(keyword in user_agent for keyword in bot_keywords):
         return # Botのアクセスはログに残さず、セッションも作らない
 
@@ -131,7 +132,8 @@ def index():
             "end_node": TARGET_CENTER_NODE,
             "is_error": bool(error),
             "error_detail": error_category,
-            "path_length": len(result) if result else 0
+            "path_length": len(result) if result else 0,
+            "path": result
         }
         threading.Thread(target=insert_log_to_supabase, args=(log_data,)).start()
     
@@ -150,8 +152,8 @@ def search():
     start_name = request.form.get("start_name", "") if request.method == "POST" else request.args.get("start_name", "")
     end_name = request.form.get("end_name", "") if request.method == "POST" else request.args.get("end_name", "")
     
-    start_name = start_name.strip().replace("　", " ")
-    end_name = end_name.strip().replace("　", " ")
+    start_name = start_name.strip().replace("　", "").replace(" ", "")
+    end_name = end_name.strip().replace("　", "").replace(" ", "")
     
     result, error = None, None
     if start_name and end_name:
@@ -176,7 +178,8 @@ def search():
             "end_node": end_name,
             "is_error": bool(error),
             "error_detail": error_category,
-            "path_length": len(result) if result else 0
+            "path_length": len(result) if result else 0,
+            "path": result
         }
         threading.Thread(target=insert_log_to_supabase, args=(log_data,)).start()
 
