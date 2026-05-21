@@ -15,7 +15,7 @@ body {
     padding: 40px 25px; border-radius: 12px;
     box-shadow: 0 5px 20px rgba(0,0,0,0.08);
 }
-h1 { margin: 0 0 10px 0; font-size: 26px; }
+h1 { margin: 10px 0 10px 0; font-size: 26px; }
 .subtitle { font-size: 14px; color: #7f8c8d; margin-bottom: 35px; }
 
 /* 検索フォーム */
@@ -37,8 +37,11 @@ button {
     border-radius: 8px; 
     cursor: pointer; 
     font-weight: bold;
-    transition: background-color 0.3s; /* 追加: ホバーアニメーションの統一 */
-    box-sizing: border-box;            /* 追加: 高さ計算の厳密化 */
+    transition: background-color 0.3s; 
+    box-sizing: border-box;
+    width: 96px;
+    height: 51px;
+    margin-bottom: 10px;
 }
 button:hover { background-color: #2980b9; }
 
@@ -66,6 +69,47 @@ button:hover { background-color: #2980b9; }
 }
 .work-title { font-weight: bold; color: var(--accent-color); display: block; }
 .work-roles { font-size: 0.85em; color: #555; }
+
+/* =========================================
+   作品と役柄の表示デザイン
+========================================= */
+.work-roles-container {
+    margin-top: 8px;
+    background-color: #f8f9fa; /* 薄いグレーの背景で区切る */
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+
+.role-row {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 6px;
+    font-size: 0.85em;
+}
+
+.role-row:last-child {
+    margin-bottom: 0;
+}
+
+.role-actor {
+    /* 声優名のラベルデザイン */
+    background-color: var(--text-color);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    white-space: nowrap;
+    margin-right: 10px;
+    min-width: 70px; /* 名前ラベルの縦のラインを綺麗に揃える */
+    text-align: center;
+}
+
+.role-name {
+    color: #444;
+    line-height: 1.4;
+    word-break: break-all; /* 長い役名や複数の役名が来ても折り返す */
+}
+
 .more-works-toggle {
     display: block; margin-top: 10px; text-align: center; color: var(--primary-color);
     font-size: 0.9em; cursor: pointer; background: #f0f8ff; padding: 5px; border-radius: 4px;
@@ -115,11 +159,87 @@ button:hover { background-color: #2980b9; }
     /* margin-left: 10px; は削除 (親の gap:10px に任せる) */
     transition: background-color 0.3s;
     box-sizing: border-box;            /* 追加: 高さ計算の厳密化 */
+    width: 96px;
+    height:51px;
 }
 .reset-button:hover { background-color: #c0392b; }
 
 .search-box-double { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
 .search-box-double input { width: 40%; }
-@media (max-width: 500px) {
-    .search-box-double input { width: 100%; }
+
+/* =========================================
+   スマホ用レスポンシブ調整 (幅600px以下)
+========================================= */
+@media (max-width: 600px) {
+    /* 1. 全体の余白を減らしてコンテンツ領域を広げる */
+    body { padding: 10px; }
+    .container { padding: 25px 15px; }
+    h1 { font-size: 22px; }
+
+    /* 2. アンケートバナーのスマホ調整 */
+    .survey-banner { padding: 15px 10px; }
+    .survey-btn {
+        display: block; /* ボタンを横幅いっぱいに */
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px 10px;
+    }
+
+    /* 3. Aグループ：検索エリアの縦並び化 */
+    .search-box {
+        flex-direction: column;
+        align-items: stretch; /* 子要素を横幅いっぱいに広げる */
+    }
+    .search-box input[type="text"] {
+        width: 100%; /* 入力欄を100%に */
+        box-sizing: border-box;
+    }
+    /* ボタン群を横並びで均等に分割 */
+    .search-box-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+    }
+    .search-box button, 
+    .search-box .reset-button {
+        min-width: 120px;
+    }
+
+    /* 4. Bグループ：2地点検索の縦並び化と矢印の回転 */
+    .search-box-double {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .search-box-double input[type="text"] {
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .search-box-double span {
+        transform: rotate(90deg); /* スマホでは「→」を「↓」にする */
+        margin: 5px 0;
+        display: block;
+    }
+    
+    /* 検索ボタンとクリアボタンを横並び均等に (Bグループ用) */
+    .button-group {
+        display: flex;
+        gap: 10px;
+        width: 100%;
+    }
+    .button-group button, 
+    .button-group .reset-button {
+        flex: 1;
+        width: 100%;
+    }
+
+    /* 5. 結果エリアのスマホ調整 */
+    .actor-card {
+        font-size: 1.1em;
+        padding: 10px 20px;
+    }
+    .works-box {
+        width: 100%;
+        box-sizing: border-box;
+    }
 }

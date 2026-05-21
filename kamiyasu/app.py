@@ -11,21 +11,21 @@ from supabase import create_client, Client
 
 app = Flask(__name__)
 
-# --- セキュリティとセッション設定 ---
+# セキュリティとセッション設定
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "super_secret_key_for_thesis")
-# ブラウザを閉じてもA/Bグループを保持するため有効期限を30日に設定
+# セッション期間
 app.permanent_session_lifetime = timedelta(days=30)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PICKLE_FILE = os.path.join(BASE_DIR, 'app_data.pkl')
 TARGET_CENTER_NODE = "神谷浩史"
 
-# --- Supabaseの初期化 ---
+# Supabaseの初期化
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
 
-# --- 事前計算済みデータの読み込み ---
+# 事前計算済みデータの読み込み
 print("計算済みデータを読み込んでいます...")
 with open(PICKLE_FILE, 'rb') as f:
     data = pickle.load(f)
@@ -59,7 +59,7 @@ def find_path(source_node, target_node):
     except nx.NetworkXNoPath:
         return None, "2人の間に共演の繋がりは見つかりませんでした。"
 
-# --- Supabaseへの非同期ログ送信関数 ---
+# Supabaseへの非同期ログ送信関数
 def insert_log_to_supabase(log_data):
     if not supabase:
         print("Supabase config is missing. Log not sent:", log_data)
@@ -69,21 +69,21 @@ def insert_log_to_supabase(log_data):
     except Exception as e:
         print(f"Supabase insert error: {e}")
 
-# --- ログ記録用の共通関数（ここを新しく追加） ---
+# ログ記録用の共通関数
 def log_to_supabase(table_name, data):
     try:
         supabase.table(table_name).insert(data).execute()
     except Exception as e:
         print(f"Supabase Log Error: {e}")
 
-# --- 全リクエスト共通：セッション管理とA/Bグループ割り当て ---
+# セッション管理とA/Bグループ割り当て
 @app.before_request
 def manage_session():
     # 1. 静的ファイルやアイコン探しの通信は無視する
     if request.path.startswith('/static') or request.path == '/favicon.ico':
         return
 
-    # 2. 【追加】アクセス元の正体（User-Agent）を確認し、Botなら無視する
+    # 2. アクセス元の正体を確認し、Botなら無視する
     user_agent = request.headers.get('User-Agent', '').lower()
     bot_keywords = ['bot', 'crawler', 'spider', 'preview', 'line', 'facebook', 'twitter', 'discord', 'instagram', 'X']
     if any(keyword in user_agent for keyword in bot_keywords):
@@ -103,7 +103,7 @@ def manage_session():
             "assigned_mode": session['assigned_mode']
         })
 
-# --- Aグループ：制約ありモード（神谷浩史数チェッカー） ---
+# Aグループ：制約ありモード（神谷浩史数チェッカー）
 @app.route("/", methods=["GET", "POST"])
 def index():
     # freeグループのユーザーは強制リダイレクト
@@ -142,7 +142,7 @@ def index():
                            target_name=target_name, result=result, error=error,
                            all_actors_json=json.dumps(ALL_ACTORS_LIST))
 
-# --- Bグループ：制約なしモード（自由検索） ---
+# Bグループ：制約なしモード（自由検索）
 @app.route("/search", methods=["GET", "POST"])
 def search():
     # fixedグループのユーザーは強制リダイレクト
