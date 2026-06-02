@@ -13,18 +13,27 @@
 </head>
 <body>
     <div class="container">
+        <div class="survey-banner">
+            <span class="survey-tag">重要</span>
+            <p class="survey-text">【実験アンケートご協力のお願い】</p>
+            <p class="survey-subtext">当サイトをご利用いただきありがとうございます。恐れ入りますが、検索結果を確認された後、以下のリンクよりアンケートへのご回答をお願いいたします。</p>
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSeh5wO_UdbPmhbPiYSDM_NuivOmGVfsOkbcvaTkT5lN1_IwgA/viewform?usp=pp_url&entry.1300251865={{ session['session_id'] }}" target="_blank" class="survey-btn">
+                アンケートに回答する (別タブで開きます)
+            </a>
+        </div>
+        
         <h1>神谷浩史数チェッカー</h1>
         <div class="subtitle">声優界の中心まで何人で繋がる？</div>
         <p>※名前は正式名称・フルネーム（スペースなし）で入力してください</p>
-
-        <!-- ※A/Bテストのため、自由検索へのナビゲーションリンクを削除 -->
 
         <div class="search-area">
             <form method="POST">
                 <div class="search-box">
                     <input type="text" id="seiyuu_input" name="seiyuu_name" placeholder="声優名 (例: 中村悠一)" value="{{ target_name }}" required>
-                    <button type="submit">検索</button>
-                    <a href="/" class="reset-button">クリア</a>
+                    <div class="search-box-buttons">
+                        <button type="submit">検索</button>
+                        <a href="/" class="reset-button">クリア</a>
+                    </div>
                 </div>
             </form>
         </div>
@@ -47,14 +56,33 @@
                         <div class="works-box">
                             <div class="work-item">
                                 <span class="work-title">{{ step.works[0].title }}</span>
-                                <div class="work-roles">{{ step.works[0].role_u }} / {{ step.works[0].role_v }}</div>
+                                <div class="work-roles-container">
+                                    <div class="role-row">
+                                        <span class="role-actor">{{ step.actor1 }}</span>
+                                        <span class="role-name">{{ step.works[0].role_u }}</span>
+                                    </div>
+                                    <div class="role-row">
+                                        <span class="role-actor">{{ step.actor2 }}</span>
+                                        <span class="role-name">{{ step.works[0].role_v }}</span>
+                                    </div>
+                                </div>
                             </div>
+
                             {% if step.works|length > 1 %}
                                 <div class="hidden-works" id="works-{{ loop.index }}">
                                     {% for work in step.works[1:] %}
-                                        <div style="margin-bottom:5px; border-bottom:1px solid #f9f9f9;">
+                                        <div style="margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
                                             <span class="work-title" style="font-size:0.9em;">{{ work.title }}</span>
-                                            <div class="work-roles">{{ work.role_u }} / {{ work.role_v }}</div>
+                                            <div class="work-roles-container">
+                                                <div class="role-row">
+                                                    <span class="role-actor">{{ step.actor1 }}</span>
+                                                    <span class="role-name">{{ work.role_u }}</span>
+                                                </div>
+                                                <div class="role-row">
+                                                    <span class="role-actor">{{ step.actor2 }}</span>
+                                                    <span class="role-name">{{ work.role_v }}</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     {% endfor %}
                                 </div>
@@ -70,7 +98,6 @@
 
     </div>
 
-    <!-- main.jsで読み込めるようにIDを付与したscriptタグに変更 -->
     <script id="actors-data" type="application/json">
         {{ all_actors_json|safe }}
     </script>
