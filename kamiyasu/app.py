@@ -35,6 +35,16 @@ ACTOR_DB = data["ACTOR_DB"]
 G = data["G"]
 ACTORS_BY_DIST = data["ACTORS_BY_DIST"]
 
+# 自己申告する正直なBotだけを列挙する。
+# これらはセッションを発行しない＝アクセスログにも検索ログにも乗らない。
+# （UA詐称Bot・空UAは無理にここで弾かず、後段のJS確認ビーコンで除外する）
+HONEST_CRAWLERS = (
+    'bot', 'crawler', 'spider', 'facebookexternalhit', 'embedly',
+    'preview', 'slackbot', 'discordbot', 'line/', 'python-requests',
+    'curl', 'wget', 'headlesschrome', 'lighthouse',
+)
+
+
 def get_shared_works(actor1, actor2):
     if actor1 not in ACTOR_DB or actor2 not in ACTOR_DB: return []
     works1, works2 = ACTOR_DB[actor1], ACTOR_DB[actor2]
@@ -43,6 +53,7 @@ def get_shared_works(actor1, actor2):
         {'title': t, 'role_u': works1[t], 'role_v': works2[t]}
         for t in common
     ], key=lambda x: x['title'])
+
 
 def find_path(source_node, target_node):
     if not G or source_node not in G: return None, f"「{source_node}」は見つかりませんでした。"
@@ -59,6 +70,7 @@ def find_path(source_node, target_node):
     except nx.NetworkXNoPath:
         return None, "2人の間に共演の繋がりは見つかりませんでした。"
 
+
 # Supabaseへの非同期ログ送信関数
 def insert_log_to_supabase(log_data):
     if not supabase:
@@ -69,12 +81,42 @@ def insert_log_to_supabase(log_data):
     except Exception as e:
         print(f"Supabase insert error: {e}")
 
+
 # ログ記録用の共通関数
 def log_to_supabase(table_name, data):
+    if not supabase:
+        print(f"Supabase config is missing. Log not sent to {table_name}:", data)
+        return
     try:
         supabase.table(table_name).insert(data).execute()
     except Exception as e:
         print(f"Supabase Log Error: {e}")
+
+
+# access_logs の human_confirmed を更新する関数
+def confirm_human_in_supabase(session_id):
+    if not supabase:
+        print("Supabase config is missing. human_confirmed not updated:", session_id)
+        return
+    try:
+        supabase.table("access_logs").update(
+            {"human_confirmed": True}
+        ).eq("session_id", session_id).execute()
+    except Exception as e:
+        print(f"Supabase update error: {e}")
+
+
+# エラー内容をカテゴリ分けする共通関数
+def categorize_error(error):
+    if not error:
+        return None
+    if "見つかりませんでした" in error:
+        return "存在しない声優名"   # 名前自体がDBにない（タイポなど）
+    elif "繋がりは見つかりませんでした" in error:
+        return "経路なし"           # 名前は正しいが、共演歴がない
+    else:
+        return "その他エラー"
+
 
 # セッション管理とA/Bグループ割り当て
 @app.before_request
@@ -83,25 +125,41 @@ def manage_session():
     if request.path.startswith('/static') or request.path == '/favicon.ico':
         return
 
-    # 2. アクセス元の正体を確認し、Botなら無視する
+    # 2. アクセス元の正体を確認し、自己申告する正直なBotならセッションを作らない。
+    #    （ページは通常通り返るので、リンクプレビュー等は壊れない）
     user_agent = request.headers.get('User-Agent', '').lower()
-    bot_keywords = ['bot', 'crawler', 'spider', 'preview', 'line', 'facebook', 'twitter', 'discord', 'instagram', 'X']
-    if any(keyword in user_agent for keyword in bot_keywords):
-        return # Botのアクセスはログに残さず、セッションも作らない
+    if any(keyword in user_agent for keyword in HONEST_CRAWLERS):
+        return  # セッション・ログを作らずに通常処理へ抜ける
 
-    # 3. 本物の人間のアクセスのみ、セッション発行とログ記録を行う
+    # 3. それ以外は全員セッションを作る（人間を取りこぼさない）。
+    #    怪しさの最終判定はフロントのJS確認ビーコン（/confirm）に委ねる。
     session.permanent = True
     if 'session_id' not in session:
         session['session_id'] = str(uuid.uuid4())
         session['start_time'] = datetime.now().isoformat()
         # 50%の確率で「fixed(固定)」か「free(自由)」を割り当て
         session['assigned_mode'] = 'fixed' if random.random() < 0.5 else 'free'
-        
-        # アクセスログを記録
+        session['human_confirmed'] = False
+
+        # アクセスログを記録（human_confirmed は初期 false）
         log_to_supabase("access_logs", {
             "session_id": session['session_id'],
-            "assigned_mode": session['assigned_mode']
+            "assigned_mode": session['assigned_mode'],
+            "human_confirmed": False,
         })
+
+
+# JS確認ビーコンの受け口：実際に操作・滞在した＝人間とみなして昇格させる
+@app.route("/confirm", methods=["POST"])
+def confirm_human():
+    sid = session.get('session_id')
+    # セッションが無い（＝Botなど）、または既に確認済みなら何もしない
+    if not sid or session.get('human_confirmed'):
+        return ("", 204)
+    session['human_confirmed'] = True
+    threading.Thread(target=confirm_human_in_supabase, args=(sid,)).start()
+    return ("", 204)
+
 
 # Aグループ：制約ありモード（神谷浩史数チェッカー）
 @app.route("/", methods=["GET", "POST"])
@@ -112,35 +170,29 @@ def index():
 
     target_name = request.form.get("seiyuu_name", "") if request.method == "POST" else request.args.get("seiyuu_name", "")
     target_name = target_name.strip().replace("　", "").replace(" ", "")
-    
+
     result, error = (find_path(target_name, TARGET_CENTER_NODE) if target_name else (None, None))
 
-    # 検索が実行されたらログを送信
-    if target_name:
-        error_category = None
-        if error:
-            if "見つかりませんでした" in error:
-                error_category = "存在しない声優名" # 名前自体がDBにない（タイポなど）
-            elif "繋がりは見つかりませんでした" in error:
-                error_category = "経路なし" # 名前は正しいが、共演歴がない
-            else:
-                error_category = "その他エラー"
+    # 検索が実行され、かつ有効なセッションがある場合のみログを送信
+    sid = session.get('session_id')
+    if sid and target_name:
         log_data = {
-            "session_id": session['session_id'],
-            "assigned_mode": session['assigned_mode'],
+            "session_id": sid,
+            "assigned_mode": session.get('assigned_mode'),
+            "human_confirmed": session.get('human_confirmed', False),
             "start_node": target_name,
             "end_node": TARGET_CENTER_NODE,
             "is_error": bool(error),
-            "error_detail": error_category,
+            "error_detail": categorize_error(error),
             "path_length": len(result) if result else 0,
             "path": result
         }
         threading.Thread(target=insert_log_to_supabase, args=(log_data,)).start()
-    
 
-    return render_template("index.html", 
+    return render_template("index.html",
                            target_name=target_name, result=result, error=error,
                            all_actors_json=json.dumps(ALL_ACTORS_LIST))
+
 
 # Bグループ：制約なしモード（自由検索）
 @app.route("/search", methods=["GET", "POST"])
@@ -151,42 +203,37 @@ def search():
 
     start_name = request.form.get("start_name", "") if request.method == "POST" else request.args.get("start_name", "")
     end_name = request.form.get("end_name", "") if request.method == "POST" else request.args.get("end_name", "")
-    
+
     start_name = start_name.strip().replace("　", "").replace(" ", "")
     end_name = end_name.strip().replace("　", "").replace(" ", "")
-    
+
     result, error = None, None
     if start_name and end_name:
-         result, error = find_path(start_name, end_name)
+        result, error = find_path(start_name, end_name)
     elif start_name or end_name:
-         error = "出発点と目的地の両方を入力してください。"
+        error = "出発点と目的地の両方を入力してください。"
 
-    # 検索が実行されたらログを送信
-    if start_name or end_name:
-        error_category = None
-        if error:
-            if "見つかりませんでした" in error:
-                error_category = "存在しない声優名" # 名前自体がDBにない（タイポなど）
-            elif "繋がりは見つかりませんでした" in error:
-                error_category = "経路なし" # 名前は正しいが、共演歴がない
-            else:
-                error_category = "その他エラー"
+    # 検索が実行され、かつ有効なセッションがある場合のみログを送信
+    sid = session.get('session_id')
+    if sid and (start_name or end_name):
         log_data = {
-            "session_id": session['session_id'],
-            "assigned_mode": session['assigned_mode'],
+            "session_id": sid,
+            "assigned_mode": session.get('assigned_mode'),
+            "human_confirmed": session.get('human_confirmed', False),
             "start_node": start_name,
             "end_node": end_name,
             "is_error": bool(error),
-            "error_detail": error_category,
+            "error_detail": categorize_error(error),
             "path_length": len(result) if result else 0,
             "path": result
         }
         threading.Thread(target=insert_log_to_supabase, args=(log_data,)).start()
 
-    return render_template("search.html", 
-                           start_name=start_name, end_name=end_name, 
+    return render_template("search.html",
+                           start_name=start_name, end_name=end_name,
                            result=result, error=error,
                            all_actors_json=json.dumps(ALL_ACTORS_LIST))
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
