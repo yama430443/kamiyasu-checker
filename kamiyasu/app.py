@@ -40,7 +40,7 @@ ACTORS_BY_DIST = data["ACTORS_BY_DIST"]
 # （UA詐称Bot・空UAは無理にここで弾かず、後段のJS確認ビーコンで除外する）
 HONEST_CRAWLERS = (
     'bot', 'crawler', 'spider', 'facebookexternalhit', 'embedly',
-    'preview', 'slackbot', 'discordbot', 'line/', 'python-requests',
+    'preview', 'slackbot', 'discordbot', 'python-requests',
     'curl', 'wget', 'headlesschrome', 'lighthouse',
 )
 
